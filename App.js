@@ -1,9 +1,30 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import * as React from 'react'
+import { useEffect, useState } from 'react';
 import { Alert, Button, FlatList, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { API_KEY } from'@env';
+import { NavigationContainer } from'@react-navigation/native';
+import { createBottomTabNavigator } from'@react-navigation/bottom-tabs';
+import { Ionicons} from '@expo/vector-icons'; 
 
-export default function App() {
+const Tab = createBottomTabNavigator();
+
+const KEY = API_KEY;
+
+const listSeparator = () => {
+  return (
+      <View
+        style={{
+          height: 1,
+          width: "80%",
+          backgroundColor: "#CED0CE",
+          marginLeft: "10%"
+          }}
+        />
+   );
+  };
+
+function HomeScreen() {
   //fetching current date, and making the format correct, used for lists
   const getCurrentDate = () => {
     var date = new Date().getDate();
@@ -17,10 +38,11 @@ export default function App() {
       return year + '-' + month + '-' + date; 
   };
   }
+
   const date = getCurrentDate();
   const [list, setList] = useState('');
   const [repositories, setRepositories] = useState([]);
-  const KEY = API_KEY;
+  
 
   const getRepositories = async () => {
     try {
@@ -28,25 +50,12 @@ export default function App() {
     `)
       const data = await response.json();
       setRepositories(data.results.books)
-      //console.log(data)
      } catch(error) {
         Alert.alert('Error:', error.message)
         };
       };
 
-  const listSeparator = () => {
-    return (
-        <View
-          style={{
-            height: 1,
-            width: "80%",
-            backgroundColor: "#CED0CE",
-            marginLeft: "10%"
-            }}
-          />
-     );
-    };
-
+  
   return (
     <View style={styles.container}>
       <StatusBar hidden={true} />
@@ -69,6 +78,70 @@ export default function App() {
     </View>
   );
 }
+
+function SettingsScreen() {
+  const [lists, setLists] = useState([]);
+
+  useEffect(() => {
+      const getLists = async () => {
+        const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/names.json?api-key=${KEY}`)
+        const json = await response.json();
+        setLists(json.results);
+      }
+      getLists()
+      .catch(console.error);
+  }, [])
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        keyExtractor={(item,index) => index.toString()}
+        renderItem={({item}) =>
+        <View>
+          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.list_name}</Text>
+        </View> }
+        data={lists} 
+        ItemSeparatorComponent={listSeparator}
+        />
+    </View>
+  );
+}
+
+function ListsScreen() {
+  return (
+    <View style={styles.container}>
+      <Text>Settings!</Text>
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator screenOptions={screenOptions}>
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Settings" component={SettingsScreen} />
+        <Tab.Screen name="Lists" component={ListsScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
+
+const screenOptions = ({ route }) => ({
+  tabBarIcon: ({ focused, color, size }) => {
+    let iconName;
+
+    if (route.name === 'Home') {
+      iconName = 'md-home';
+    } else if (route.name === 'Settings') {
+      iconName = 'md-settings';
+    } else if (route.name === 'Lists') {
+      iconName = 'md-list';
+    }
+
+    return <Ionicons name={iconName} size={size} color={color} />;
+  }
+});
 
 const styles = StyleSheet.create({
   container: {
