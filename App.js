@@ -5,11 +5,13 @@ import { Alert, Button, FlatList, Image, StyleSheet, Text, TextInput, View } fro
 import { API_KEY } from'@env';
 import { NavigationContainer } from'@react-navigation/native';
 import { createBottomTabNavigator } from'@react-navigation/bottom-tabs';
-import { Ionicons} from '@expo/vector-icons'; 
+import { Ionicons} from '@expo/vector-icons';
+import { ListItem } from'react-native-elements';
 
 const Tab = createBottomTabNavigator();
 
 const KEY = API_KEY;
+
 
 const listSeparator = () => {
   return (
@@ -79,8 +81,9 @@ function HomeScreen() {
   );
 }
 
-function SettingsScreen() {
+function SettingsScreen( {navigation} ) {
   const [lists, setLists] = useState([]);
+  const [genre, setGenre] = useState('');
 
   useEffect(() => {
       const getLists = async () => {
@@ -92,14 +95,24 @@ function SettingsScreen() {
       .catch(console.error);
   }, [])
 
+  useEffect(() => {
+    setGenre(genre)
+  }, [genre])
+  
+
+  renderItem = ({ item }) => (
+    <ListItem bottomDivider onPress={() => {setGenre(item.list_name_encoded); navigation.navigate('Lists', {list: item.list_name_encoded});}}>
+      <ListItem.Content>
+        <ListItem.Title>{item.list_name}</ListItem.Title>
+      </ListItem.Content>
+    </ListItem>
+  )
+
   return (
-    <View style={styles.container}>
+    <View>
       <FlatList
         keyExtractor={(item,index) => index.toString()}
-        renderItem={({item}) =>
-        <View>
-          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.list_name}</Text>
-        </View> }
+        renderItem={renderItem}
         data={lists} 
         ItemSeparatorComponent={listSeparator}
         />
@@ -107,10 +120,59 @@ function SettingsScreen() {
   );
 }
 
-function ListsScreen() {
+function ListsScreen({ route }) {
+  const {list} = route.params;
+  //fetching current date, and making the format correct, used for lists
+  const getCurrentDate = () => {
+    var date = new Date().getDate();
+    var month = new Date().getMonth() + 1;
+    var year = new Date().getFullYear();
+
+    if (date < 10) {
+      return year + '-' + month + '-0' + date;
+    }
+    else {
+      return year + '-' + month + '-' + date; 
+  };
+  }
+
+  const date = getCurrentDate();
+  const [repositories, setRepositories] = useState([]);
+  
+
+  const getRepositories = async () => {
+    try {
+    const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/${date}/${list}.json?api-key=${KEY}
+    `)
+      const data = await response.json();
+      setRepositories(data.results.books)
+      if (data.status === 'ERROR') {
+        Alert.alert('List not found')
+      }
+     } catch(error) {
+        Alert.alert('Error:', error.message)
+        };
+      };
+
+
   return (
     <View style={styles.container}>
-      <Text>Settings!</Text>
+      <StatusBar hidden={true} />
+      
+      <FlatList
+        keyExtractor={(item,index) => index.toString()}
+        renderItem={({item}) =>
+        <View>
+          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.rank}</Text>
+          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.title}</Text>
+          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.author}</Text>
+          <Image style={styles.logo} source={{uri: item.book_image}}/>
+        </View> }
+        data={repositories} 
+        ItemSeparatorComponent={listSeparator}
+        />
+        <Button title="Find" onPress= {getRepositories} />
+      
     </View>
   );
 }
@@ -120,7 +182,7 @@ export default function App() {
     <NavigationContainer>
       <Tab.Navigator screenOptions={screenOptions}>
         <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Settings" component={SettingsScreen} />
+        <Tab.Screen name="Change Genre" component={SettingsScreen} />
         <Tab.Screen name="Lists" component={ListsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
@@ -133,7 +195,7 @@ const screenOptions = ({ route }) => ({
 
     if (route.name === 'Home') {
       iconName = 'md-home';
-    } else if (route.name === 'Settings') {
+    } else if (route.name === 'Change Genre') {
       iconName = 'md-settings';
     } else if (route.name === 'Lists') {
       iconName = 'md-list';
