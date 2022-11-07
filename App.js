@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Alert, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Button, FlatList, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { API_KEY } from'@env';
 
 export default function App() {
@@ -28,7 +28,7 @@ export default function App() {
     `)
       const data = await response.json();
       setRepositories(data.results.books)
-      console.log(data)
+      //console.log(data)
      } catch(error) {
         Alert.alert('Error:', error.message)
         };
@@ -58,6 +58,7 @@ export default function App() {
           <Text style={{fontSize:18, fontWeight: "bold"}}>{item.rank}</Text>
           <Text style={{fontSize:18, fontWeight: "bold"}}>{item.title}</Text>
           <Text style={{fontSize:18, fontWeight: "bold"}}>{item.author}</Text>
+          <Image style={styles.logo} source={{uri: item.book_image}}/>
         </View> }
         data={repositories} 
         ItemSeparatorComponent={listSeparator}
@@ -77,6 +78,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
+    alignItems: 'flex-end',
     width: 66,
     height: 58,
   },
