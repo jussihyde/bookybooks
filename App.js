@@ -1,12 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import * as React from 'react'
 import { useEffect, useState } from 'react';
-import { Alert, Button, FlatList, Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, StyleSheet, View } from 'react-native';
 import { API_KEY } from'@env';
 import { NavigationContainer } from'@react-navigation/native';
 import { createBottomTabNavigator } from'@react-navigation/bottom-tabs';
 import { Ionicons} from '@expo/vector-icons';
-import { Input, ListItem } from'react-native-elements';
+import { ListItem } from'react-native-elements';
 import * as SQLite from'expo-sqlite';
 
 const Tab = createBottomTabNavigator();
@@ -29,11 +29,11 @@ const listSeparator = () => {
    );
   };
 
-function HomeScreen() {
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [imageuri, setImageuri] = useState('');
-  const [description, setDescription] = useState('');
+function HomeScreen( {route} ) {
+  const {title} = route.params;
+  const {author} = route.params;
+  const {imageuri} = route.params;
+  const {description} = route.params;
   const [books, setBooks] = useState([]);
 
   useEffect(() => {
@@ -62,6 +62,11 @@ function HomeScreen() {
     }, null, updateList);
   }
 
+  useEffect(() => {
+    setBooks(title, author, description, imageuri);
+    saveItem()
+  }, [title]);
+
   const renderItem = ({ item }) => (
     <ListItem onLongPress={() => {deleteItem(item.id)}}>
         <ListItem.Content >
@@ -75,23 +80,12 @@ function HomeScreen() {
 
   return(
     <View>
-      <Input placeholder='title' label='PLACEFINDER' style={{ marginTop: 5, marginBottom: 5,  fontSize:15, width: 200}}
-      onChangeText={(title) => setTitle(title)}
-      value={title}/>
-      <Input placeholder='author' label='PLACEFINDER' style={{ marginTop: 5, marginBottom: 5,  fontSize:15, width: 200}}
-      onChangeText={(author) => setAuthor(author)}
-      value={author}/>
-      <Input placeholder='imageuri' label='PLACEFINDER' style={{ marginTop: 5, marginBottom: 5,  fontSize:15, width: 200}}
-      onChangeText={(imageuri) => setImageuri(imageuri)}
-      value={imageuri}/>
-      <Input placeholder='description' label='PLACEFINDER' style={{ marginTop: 5, marginBottom: 5,  fontSize:15, width: 200}}
-      onChangeText={(description) => setDescription(description)}
-      value={description}/>
-      <Button raised icon={{name: 'save', color: 'white'}} onPress={saveItem} title="SAVE" />
+      
       <FlatList
-      keyExtractor={item => item.id.toString()} 
+      keyExtractor={(item,index) => index.toString()} 
       renderItem={renderItem}
-      data={books} 
+      data={books}
+      ItemSeparatorComponent={listSeparator}
        
     />
     </View>
@@ -118,7 +112,7 @@ function SettingsScreen( {navigation} ) {
   }, [genre])
   
 
-  renderItem = ({ item }) => (
+ const renderItem = ({ item }) => (
     <ListItem bottomDivider onPress={() => {setGenre(item.list_name_encoded); navigation.navigate('Lists', {list: item.list_name_encoded});}}>
       <ListItem.Content>
         <ListItem.Title>{item.list_name}</ListItem.Title>
@@ -138,7 +132,7 @@ function SettingsScreen( {navigation} ) {
   );
 }
 
-function ListsScreen({ route }) {
+function ListsScreen({ route, navigation }) {
   const {list} = route.params;
   //fetching current date, and making the format correct, used for lists
   const getCurrentDate = () => {
@@ -158,39 +152,42 @@ function ListsScreen({ route }) {
   const [repositories, setRepositories] = useState([]);
   
 
-  const getRepositories = async () => {
-    try {
-    const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/${date}/${list}.json?api-key=${KEY}
-    `)
-      const data = await response.json();
-      setRepositories(data.results.books)
-      //console.log(data)
-      if (data.status === 'ERROR') {
-        Alert.alert('List not found')
+  
+  
+  useEffect(() => {
+      const getRepositories = async () => {
+        const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/${date}/${list}.json?api-key=${KEY}`)
+        const json = await response.json();
+        setRepositories(json.results.books);
+        if (json.status === 'ERROR') {
+          Alert.alert('List not found')
+        }
       }
-     } catch(error) {
-        Alert.alert('Error:', error.message)
-        };
-      };
+        getRepositories()
+        .catch(console.error);
+    }, [list])
+
+  renderItem = ({ item }) => (
+    <ListItem bottomDivider onPress={() => {navigation.navigate('Home', {title: item.title, author: item.author, description: item.description, imageuri: item.book_image });}}>
+        <ListItem.Content>
+          <ListItem.Title>{item.rank}. {item.title}</ListItem.Title>
+          <ListItem.Subtitle >{item.author}</ListItem.Subtitle>
+          <ListItem.Subtitle >{item.description}</ListItem.Subtitle>
+          <Image style={styles.logo} source={{uri: item.book_image}}/>
+        </ListItem.Content>
+      </ListItem>
+    )
 
 
   return (
-    <View style={styles.container}>
+    <View >
       <StatusBar hidden={true} />
-      
       <FlatList
         keyExtractor={(item,index) => index.toString()}
-        renderItem={({item}) =>
-        <View>
-          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.rank}</Text>
-          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.title}</Text>
-          <Text style={{fontSize:18, fontWeight: "bold"}}>{item.author}</Text>
-          <Image style={styles.logo} source={{uri: item.book_image}}/>
-        </View> }
+        renderItem={renderItem}
         data={repositories} 
         ItemSeparatorComponent={listSeparator}
         />
-        <Button title="Find" onPress= {getRepositories} />
       
     </View>
   );
@@ -200,9 +197,9 @@ export default function App() {
   return (
     <NavigationContainer>
       <Tab.Navigator screenOptions={screenOptions}>
-        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Home" component={HomeScreen} initialParams={{title: ""}}/>
         <Tab.Screen name="Change Genre" component={SettingsScreen} />
-        <Tab.Screen name="Lists" component={ListsScreen} />
+        <Tab.Screen name="Lists" component={ListsScreen} initialParams={{list: "hardcover-fiction"}}/>
       </Tab.Navigator>
     </NavigationContainer>
   );
@@ -233,7 +230,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     alignItems: 'flex-end',
-    width: 66,
-    height: 58,
+    width: 65,
+    height: 90,
   },
 });
