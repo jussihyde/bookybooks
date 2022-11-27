@@ -9,10 +9,13 @@ import { Ionicons} from '@expo/vector-icons';
 import { ListItem, Text } from'react-native-elements';
 import * as SQLite from'expo-sqlite';
 
+//creating tab navigator
 const Tab = createBottomTabNavigator();
 
+//setting imported api key
 const KEY = API_KEY;
 
+//opening database
 const db = SQLite.openDatabase('booksdb.db');
 
 function HomeScreen( {  route } ) {
@@ -22,18 +25,21 @@ function HomeScreen( {  route } ) {
   const {description} = route.params;
   const [books, setBooks] = useState([]);
 
+  //creating table into the database
   useEffect(() => {
     db.transaction(tx => {
       tx.executeSql('create table if not exists books (id integer primary key not null, title text, author text, imageuri text, description text);');
     }, null, updateList);
   }, []);
 
+  //saving database items
   const saveItem = () => {
     db.transaction(tx => {
       tx.executeSql('insert into books (title, author, imageuri, description) values (?,?,?,?);', [title, author, imageuri, description]); 
     }, null, updateList);
   }
 
+  //updating database items
   const updateList = () => {
     db.transaction(tx => {
       tx.executeSql('select * from books;', [], (_, { rows }) =>
@@ -42,12 +48,14 @@ function HomeScreen( {  route } ) {
     });
   }
 
+  //deleting database items
   const deleteItem = (id) => {
     db.transaction( tx => {
       tx.executeSql('delete from books where id = ?;', [id]);
     }, null, updateList);
   }
 
+  //adding book sent from toplist to states, and saving it to database
   useEffect(() => {
     if (title === "") {}
     else {
@@ -85,6 +93,7 @@ function HomeScreen( {  route } ) {
 function SettingsScreen( {  navigation  } ) {
   const [lists, setLists] = useState([]);
 
+  //fetching list genres from api
   useEffect(() => {
       const getLists = async () => {
         const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/names.json?api-key=${KEY}`)
@@ -134,6 +143,7 @@ function ListsScreen({ route, navigation }) {
   const date = getCurrentDate();
   const [repositories, setRepositories] = useState([]);
   
+  //fetching toplist from api, based on genre set in change genre tab
   useEffect(() => {
       const getRepositories = async () => {
         const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/${date}/${list}.json?api-key=${KEY}`)
@@ -173,6 +183,7 @@ function ListsScreen({ route, navigation }) {
   );
 }
 
+//navigation component
 export default function App() {
   return (
     <NavigationContainer>
@@ -185,6 +196,7 @@ export default function App() {
   );
 }
 
+//styling a gap between list items
 const listSeparator = () => {
   return (
       <View
@@ -198,6 +210,7 @@ const listSeparator = () => {
    );
   };
 
+//bottom tab navigator buttons with icons
 const screenOptions = ({ route }) => ({
   tabBarIcon: ({ color, size }) => {
     let iconName;
