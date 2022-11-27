@@ -108,6 +108,7 @@ function SettingsScreen( {  navigation  } ) {
     <ListItem bottomDivider onPress={() => {navigation.navigate('Top Lists', {list: item.list_name_encoded});}}>
       <ListItem.Content>
         <ListItem.Title>{item.list_name}</ListItem.Title>
+        <ListItem.Subtitle ><Ionicons name="arrow-forward" /></ListItem.Subtitle>
       </ListItem.Content>
     </ListItem>
   )
@@ -158,12 +159,13 @@ function ListsScreen({ route, navigation }) {
     }, [list])
 
   renderItem = ({ item }) => (
-    <ListItem bottomDivider onPress={() => {navigation.navigate('My books', {title: item.title, author: item.author, description: item.description, imageuri: item.book_image });}}>
+    <ListItem onPress={() => {navigation.navigate('My books', {title: item.title, author: item.author, description: item.description, imageuri: item.book_image });}}>
         <ListItem.Content>
           <ListItem.Title>{item.rank}. {item.title}</ListItem.Title>
           <ListItem.Subtitle >{item.author}</ListItem.Subtitle>
           <ListItem.Subtitle >{item.description}</ListItem.Subtitle>
           <Image style={styles.logo} source={{uri: item.book_image}}/>
+          <ListItem.Subtitle ><Ionicons name="arrow-down" color="green" />press to save to My books</ListItem.Subtitle>
         </ListItem.Content>
       </ListItem>
     )
