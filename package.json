@@ -18,7 +18,8 @@
     "react-native-dotenv": "^3.3.1",
     "react-native-elements": "^3.4.2",
     "react-native-screens": "~3.15.0",
-    "expo-sqlite": "~10.3.0"
+    "expo-sqlite": "~10.3.0",
+    "expo-updates": "~0.14.7"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9"
