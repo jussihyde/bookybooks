@@ -99,6 +99,9 @@ function SettingsScreen( {  navigation  } ) {
         const response = await fetch(`https://api.nytimes.com/svc/books/v3/lists/names.json?api-key=${KEY}`)
         const json = await response.json();
         setLists(json.results);
+        if (json.status === 'ERROR') {
+          Alert.alert('Error loading genres')
+        }
       }
       getLists()
       .catch(console.error);
